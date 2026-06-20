@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.dormrepair.mapper.NoticeMapper">
+
+    <resultMap id="NoticeResultMap" type="com.example.dormrepair.entity.Notice">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="status" column="status"/>
+        <result property="publisherId" column="publisher_id"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <!-- 分页查询公告（管理员用） -->
+    <select id="selectPageFilter" resultMap="NoticeResultMap">
+        SELECT * FROM notice
+        <where>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 查询显示中的公告列表 -->
+    <select id="selectShowList" resultMap="NoticeResultMap">
+        SELECT * FROM notice
+        WHERE status = 1
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.dormrepair.mapper.RepairRecordMapper">
+
+    <resultMap id="RepairRecordResultMap" type="com.example.dormrepair.entity.RepairRecord">
+        <id property="id" column="id"/>
+        <result property="orderId" column="order_id"/>
+        <result property="action" column="action"/>
+        <result property="operatorId" column="operator_id"/>
+        <result property="operatorRole" column="operator_role"/>
+        <result property="remark" column="remark"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <!-- 分页查询某工单的操作记录 -->
+    <select id="selectPageByOrderId" resultMap="RepairRecordResultMap">
+        SELECT * FROM repair_record
+        WHERE order_id = #{orderId}
+        ORDER BY create_time ASC
+    </select>
+
+    <!-- 分页查询某维修人员的历史记录 -->
+    <select id="selectPageByRepairUserId" resultMap="RepairRecordResultMap">
+        SELECT * FROM repair_record
+        WHERE operator_id = #{repairUserId}
+        ORDER BY create_time DESC
+    </select>
+</mapper>

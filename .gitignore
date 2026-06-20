@@ -1,0 +1,26 @@
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE / local tools
+.idea/
+.vscode/
+.agents/
+openspec/
+*.iml
+
+# Logs
+*.log
+
+# Backend build output
+dorm-repair/target/
+
+# Frontend dependencies and build output
+dorm-repair-ui/node_modules/
+dorm-repair-ui/dist/
+
+# Local uploaded files
+dorm-repair/uploads/
+
+# Local runtime config with secrets
+dorm-repair/src/main/resources/application.yml

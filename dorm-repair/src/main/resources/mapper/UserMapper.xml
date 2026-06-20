@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.dormrepair.mapper.UserMapper">
+
+    <resultMap id="UserResultMap" type="com.example.dormrepair.entity.User">
+        <id property="id" column="id"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="realName" column="real_name"/>
+        <result property="phone" column="phone"/>
+        <result property="role" column="role"/>
+        <result property="gender" column="gender"/>
+        <result property="dormBuildingId" column="dorm_building_id"/>
+        <result property="dormRoomId" column="dorm_room_id"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <!-- 根据用户名查询用户 -->
+    <select id="selectByUsername" resultMap="UserResultMap">
+        SELECT * FROM sys_user WHERE username = #{username}
+    </select>
+
+    <!-- 根据 ID 查询用户 -->
+    <select id="selectById" resultMap="UserResultMap">
+        SELECT * FROM sys_user WHERE id = #{id}
+    </select>
+
+    <!-- 插入用户 -->
+    <insert id="insert" parameterType="com.example.dormrepair.entity.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO sys_user (username, password, real_name, phone, role, gender, dorm_building_id, dorm_room_id, status)
+        VALUES (#{username}, #{password}, #{realName}, #{phone}, #{role}, #{gender}, #{dormBuildingId}, #{dormRoomId}, #{status})
+    </insert>
+
+    <!-- 根据 ID 更新密码 -->
+    <update id="updatePassword">
+        UPDATE sys_user SET password = #{password} WHERE id = #{id}
+    </update>
+
+    <!-- 根据 ID 更新用户基本信息 -->
+    <update id="updateById" parameterType="com.example.dormrepair.entity.User">
+        UPDATE sys_user
+        <set>
+            <if test="realName != null">real_name = #{realName},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="gender != null">gender = #{gender},</if>
+            <if test="dormBuildingId != null">dorm_building_id = #{dormBuildingId},</if>
+            <if test="dormRoomId != null">dorm_room_id = #{dormRoomId},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 分页查询用户（支持按用户名、角色、状态筛选） -->
+    <select id="selectPageFilter" resultMap="UserResultMap">
+        SELECT * FROM sys_user
+        <where>
+            <if test="username != null and username != ''">
+                AND username LIKE CONCAT('%', #{username}, '%')
+            </if>
+            <if test="role != null and role != ''">
+                AND role = #{role}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据 ID 删除用户 -->
+    <delete id="deleteById">
+        DELETE FROM sys_user WHERE id = #{id}
+    </delete>
+
+</mapper>

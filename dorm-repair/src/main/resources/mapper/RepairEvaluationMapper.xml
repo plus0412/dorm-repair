@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.dormrepair.mapper.RepairEvaluationMapper">
+
+    <resultMap id="RepairEvaluationResultMap" type="com.example.dormrepair.entity.RepairEvaluation">
+        <id property="id" column="id"/>
+        <result property="orderId" column="order_id"/>
+        <result property="studentId" column="student_id"/>
+        <result property="repairUserId" column="repair_user_id"/>
+        <result property="rating" column="rating"/>
+        <result property="comment" column="comment"/>
+        <result property="createTime" column="create_time"/>
+        <result property="studentName" column="student_name"/>
+        <result property="repairUserName" column="repair_user_name"/>
+    </resultMap>
+
+    <!-- 按评分统计数量 -->
+    <select id="selectCountByRating" resultType="java.lang.Long">
+        SELECT COUNT(*) FROM repair_evaluation WHERE rating = #{rating}
+    </select>
+
+    <!-- 分页查询评价（关联学生姓名和维修人员姓名） -->
+    <select id="selectPageWithNames" resultMap="RepairEvaluationResultMap">
+        SELECT re.*,
+               su.real_name AS student_name,
+               ru.real_name AS repair_user_name
+        FROM repair_evaluation re
+        LEFT JOIN sys_user su ON re.student_id = su.id
+        LEFT JOIN sys_user ru ON re.repair_user_id = ru.id
+        <where>
+            <if test="rating != null">
+                AND re.rating = #{rating}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND re.comment LIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+        ORDER BY re.create_time DESC
+    </select>
+
+</mapper>
