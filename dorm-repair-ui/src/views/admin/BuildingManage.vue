@@ -11,7 +11,11 @@
       <el-table :data="tableData" stripe>
         <el-table-column prop="name" label="楼栋名称" />
         <el-table-column prop="description" label="描述" />
-        <el-table-column prop="createTime" label="创建时间" width="160" />
+        <el-table-column prop="createTime" label="创建时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="150">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="showDialog('edit', row)">编辑</el-button>
@@ -51,6 +55,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { buildingApi } from '../../api'
+import { formatDateTime } from '../../utils/format'
 
 const tableData = ref([])
 const total = ref(0)
@@ -60,16 +65,22 @@ const dialogTitle = ref('新增宿舍楼')
 const formRef = ref()
 const form = ref({ id: null, name: '', description: '' })
 
-const rules = { name: [{ required: true, message: '请输入楼栋名称', trigger: 'blur' }] }
+const rules = {
+  name: [{ required: true, message: '请输入楼栋名称', trigger: 'blur' }]
+}
 
-onMounted(() => { loadData() })
+onMounted(() => {
+  loadData()
+})
 
 const loadData = async () => {
   try {
     const res = await buildingApi.page(queryParams.value)
     tableData.value = res.data.records || []
     total.value = res.data.total || 0
-  } catch (error) { console.error(error) }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 const showDialog = (type, row = {}) => {
@@ -80,7 +91,7 @@ const showDialog = (type, row = {}) => {
 
 const submitForm = async () => {
   if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
+  await formRef.value.validate(async valid => {
     if (!valid) return
     try {
       if (form.value.id) {
@@ -92,18 +103,23 @@ const submitForm = async () => {
       }
       dialogVisible.value = false
       loadData()
-    } catch (error) { console.error(error) }
+    } catch (error) {
+      console.error(error)
+    }
   })
 }
 
-const deleteRow = async (id) => {
+const deleteRow = async id => {
   ElMessageBox.confirm('确定要删除吗？', '提示', { type: 'warning' })
     .then(async () => {
       try {
         await buildingApi.delete(id)
         ElMessage.success('删除成功')
         loadData()
-      } catch (error) { console.error(error) }
-    }).catch(() => {})
+      } catch (error) {
+        console.error(error)
+      }
+    })
+    .catch(() => {})
 }
 </script>

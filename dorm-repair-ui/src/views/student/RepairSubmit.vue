@@ -24,6 +24,21 @@
         <el-form-item label="报修描述" prop="description">
           <el-input v-model="form.description" type="textarea" :rows="4" placeholder="请详细描述报修内容" />
         </el-form-item>
+
+        <el-form-item v-if="isResubmit && existingImages.length > 0 && uploadFileList.length === 0" label="原报修图片">
+          <div class="existing-image-wrap">
+            <el-image
+              v-for="img in existingImages"
+              :key="img.id"
+              :src="img.url"
+              :preview-src-list="existingImages.map(item => item.url)"
+              fit="cover"
+              class="existing-image"
+            />
+          </div>
+          <div class="image-tip">不重新上传则保留原图，重新上传后将用新图片覆盖原图片。</div>
+        </el-form-item>
+
         <el-form-item label="上传图片">
           <el-upload
             v-model:file-list="uploadFileList"
@@ -54,6 +69,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { buildingApi, orderApi, repairTypeApi, roomApi } from '../../api'
+import { splitImageUrls } from '../../utils/format'
 
 const router = useRouter()
 const route = useRoute()
@@ -62,6 +78,7 @@ const formRef = ref()
 const loading = ref(false)
 const uploadFileList = ref([])
 const files = ref([])
+const existingImages = ref([])
 const form = ref({
   title: '',
   repairTypeId: null,
@@ -110,6 +127,7 @@ const loadRejectedOrder = async () => {
     roomId: order.roomId,
     description: order.description
   }
+  existingImages.value = splitImageUrls(order.images)
   await loadRooms(order.roomId)
 }
 
@@ -166,5 +184,25 @@ const handleSubmit = async () => {
 <style scoped>
 .repair-submit h2 {
   margin-bottom: 20px;
+}
+
+.existing-image-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.existing-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 6px;
+}
+
+.image-tip {
+  width: 100%;
+  margin-top: 8px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
 }
 </style>

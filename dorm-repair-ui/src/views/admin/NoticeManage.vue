@@ -18,10 +18,16 @@
         <el-table-column prop="title" label="标题" />
         <el-table-column prop="status" label="状态" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? '显示' : '隐藏' }}</el-tag>
+            <el-tag :type="row.status === 1 ? 'success' : 'info'">
+              {{ row.status === 1 ? '显示' : '隐藏' }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="发布时间" width="160" />
+        <el-table-column prop="createTime" label="发布时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="showDialog('edit', row)">编辑</el-button>
@@ -64,6 +70,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { noticeApi } from '../../api'
+import { formatDateTime } from '../../utils/format'
 
 const tableData = ref([])
 const total = ref(0)
@@ -78,14 +85,18 @@ const rules = {
   content: [{ required: true, message: '请输入内容', trigger: 'blur' }]
 }
 
-onMounted(() => { loadData() })
+onMounted(() => {
+  loadData()
+})
 
 const loadData = async () => {
   try {
     const res = await noticeApi.page(queryParams.value)
     tableData.value = res.data.records || []
     total.value = res.data.total || 0
-  } catch (error) { console.error(error) }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 const showDialog = (type, row = {}) => {
@@ -96,7 +107,7 @@ const showDialog = (type, row = {}) => {
 
 const submitForm = async () => {
   if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
+  await formRef.value.validate(async valid => {
     if (!valid) return
     try {
       if (form.value.id) {
@@ -108,26 +119,33 @@ const submitForm = async () => {
       }
       dialogVisible.value = false
       loadData()
-    } catch (error) { console.error(error) }
+    } catch (error) {
+      console.error(error)
+    }
   })
 }
 
-const toggleStatus = async (row) => {
+const toggleStatus = async row => {
   try {
     await noticeApi.updateStatus(row.id, { status: row.status === 1 ? 0 : 1 })
     ElMessage.success('操作成功')
     loadData()
-  } catch (error) { console.error(error) }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
-const deleteRow = async (id) => {
+const deleteRow = async id => {
   ElMessageBox.confirm('确定要删除吗？', '提示', { type: 'warning' })
     .then(async () => {
       try {
         await noticeApi.delete(id)
         ElMessage.success('删除成功')
         loadData()
-      } catch (error) { console.error(error) }
-    }).catch(() => {})
+      } catch (error) {
+        console.error(error)
+      }
+    })
+    .catch(() => {})
 }
 </script>

@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class RepairOrderServiceImpl implements RepairOrderService {
@@ -57,7 +59,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
             repairOrderMapper.updateById(order);
         }
 
-        addRecord(order.getId(), order.getStudentId(), "student", "提交", null);
+        addRecord(order.getId(), order.getStudentId(), "student", "提交报修", null);
         return order;
     }
 
@@ -140,6 +142,7 @@ public class RepairOrderServiceImpl implements RepairOrderService {
                 && (order.getRepairUserId() == null || !order.getRepairUserId().equals(userId))) {
             throw new BusinessException("无权限查看该工单");
         }
+        order.setImages(resolveDisplayImages(order.getImages()));
         return order;
     }
 
@@ -304,5 +307,16 @@ public class RepairOrderServiceImpl implements RepairOrderService {
             log.error("save image failed", e);
             throw new BusinessException("图片上传失败");
         }
+    }
+
+    private String resolveDisplayImages(String images) {
+        if (images == null || images.isBlank()) {
+            return images;
+        }
+        return Arrays.stream(images.split(","))
+                .map(String::trim)
+                .filter(item -> !item.isEmpty())
+                .map(ossStorageService::resolveImageUrl)
+                .collect(Collectors.joining(","));
     }
 }

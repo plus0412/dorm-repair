@@ -3,7 +3,7 @@
     <h2>房间管理</h2>
     <el-card>
       <el-form inline>
-        <el-form-item label="宿舍楼">
+        <el-form-item label="所属宿舍楼">
           <el-select v-model="queryParams.buildingId" placeholder="全部" clearable style="width: 150px" @change="loadData">
             <el-option v-for="b in buildings" :key="b.id" :label="b.name" :value="b.id" />
           </el-select>
@@ -16,7 +16,11 @@
       <el-table :data="tableData" stripe>
         <el-table-column prop="roomNo" label="房间号" />
         <el-table-column prop="buildingName" label="所属宿舍楼" />
-        <el-table-column prop="createTime" label="创建时间" width="160" />
+        <el-table-column prop="createTime" label="创建时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="150">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="showDialog('edit', row)">编辑</el-button>
@@ -36,7 +40,7 @@
     </el-card>
 
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="400px">
-      <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
+      <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
         <el-form-item label="所属宿舍楼" prop="buildingId">
           <el-select v-model="form.buildingId" style="width: 100%">
             <el-option v-for="b in buildings" :key="b.id" :label="b.name" :value="b.id" />
@@ -58,6 +62,7 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { roomApi, buildingApi } from '../../api'
+import { formatDateTime } from '../../utils/format'
 
 const tableData = ref([])
 const total = ref(0)
@@ -82,7 +87,9 @@ const loadBuildings = async () => {
   try {
     const res = await buildingApi.list()
     buildings.value = res.data || []
-  } catch (error) { console.error(error) }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 const loadData = async () => {
@@ -90,7 +97,9 @@ const loadData = async () => {
     const res = await roomApi.page(queryParams.value)
     tableData.value = res.data.records || []
     total.value = res.data.total || 0
-  } catch (error) { console.error(error) }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 const showDialog = (type, row = {}) => {
@@ -101,7 +110,7 @@ const showDialog = (type, row = {}) => {
 
 const submitForm = async () => {
   if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
+  await formRef.value.validate(async valid => {
     if (!valid) return
     try {
       if (form.value.id) {
@@ -113,18 +122,23 @@ const submitForm = async () => {
       }
       dialogVisible.value = false
       loadData()
-    } catch (error) { console.error(error) }
+    } catch (error) {
+      console.error(error)
+    }
   })
 }
 
-const deleteRow = async (id) => {
+const deleteRow = async id => {
   ElMessageBox.confirm('确定要删除吗？', '提示', { type: 'warning' })
     .then(async () => {
       try {
         await roomApi.delete(id)
         ElMessage.success('删除成功')
         loadData()
-      } catch (error) { console.error(error) }
-    }).catch(() => {})
+      } catch (error) {
+        console.error(error)
+      }
+    })
+    .catch(() => {})
 }
 </script>

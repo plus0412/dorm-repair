@@ -18,18 +18,47 @@
         <el-descriptions-item label="完成时间">{{ formatDateTime(order.finishTime) }}</el-descriptions-item>
       </el-descriptions>
 
+      <el-divider v-if="images.length > 0">报修图片</el-divider>
+      <div v-if="images.length > 0" class="image-list">
+        <el-image
+          v-for="img in images"
+          :key="img.id"
+          :src="img.url"
+          :preview-src-list="images.map(item => item.url)"
+          fit="cover"
+          style="width: 120px; height: 120px; border-radius: 4px"
+        />
+      </div>
+
       <el-divider>操作记录</el-divider>
 
       <el-timeline>
-        <el-timeline-item v-for="record in records" :key="record.id" :timestamp="formatDateTime(record.createTime)" placement="top">
+        <el-timeline-item
+          v-for="record in records"
+          :key="record.id"
+          :timestamp="formatDateTime(record.createTime)"
+          placement="top"
+        >
           <p>{{ record.operation }}{{ record.remark ? ` - ${record.remark}` : '' }}</p>
         </el-timeline-item>
       </el-timeline>
 
       <div style="margin-top: 20px">
         <el-button @click="$router.back()">返回</el-button>
-        <el-button v-if="order.status === 1" type="warning" @click="$router.push(`/student/submit/${order.id}`)">重新提交</el-button>
-        <el-button v-if="order.status === 5" type="success" @click="$router.push(`/student/evaluate/${order.id}`)">去评价</el-button>
+        <el-button
+          v-if="order.status === 1"
+          type="warning"
+          @click="$router.push(`/student/submit/${order.id}`)"
+        >
+          重新提交
+        </el-button>
+        <el-button
+          v-if="order.status === 5"
+          type="success"
+          @click="$router.push(`/student/evaluate/${order.id}`)"
+        >
+          去评价
+        </el-button>
       </div>
     </el-card>
   </div>
@@ -39,11 +68,12 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { orderApi, recordApi } from '../../api'
-import { formatDateTime } from '../../utils/format'
+import { formatDateTime, splitImageUrls } from '../../utils/format'
 
 const route = useRoute()
 const order = ref(null)
 const records = ref([])
+const images = ref([])
 
 const statusMap = {
   0: { text: '待审核', type: 'info' },
@@ -66,6 +96,7 @@ onMounted(async () => {
       recordApi.byOrder(route.params.id, { pageNum: 1, pageSize: 100 })
     ])
     order.value = orderRes.data
+    images.value = splitImageUrls(orderRes.data.images)
     records.value = recordRes.data.records || []
   } catch (error) {
     console.error(error)
@@ -77,5 +108,11 @@ onMounted(async () => {
 .repair-detail h2 {
   margin-bottom: 20px;
 }
-</style>
 
+.image-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+</style>

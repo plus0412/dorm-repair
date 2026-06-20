@@ -8,15 +8,22 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 import java.util.UUID;
 
 @Service
 public class OssStorageService {
+
+    private static final long SIGNED_URL_EXPIRE_MILLIS = 24 * 60 * 60 * 1000L;
 
     @Value("${aliyun.oss.endpoint}")
     private String endpoint;
@@ -76,8 +83,37 @@ public class OssStorageService {
         }
     }
 
+    public String resolveImageUrl(String path) {
+        if (!StringUtils.hasText(path)) {
+            return path;
+        }
+
+        String objectKey = extractObjectKey(path);
+        if (StringUtils.hasText(objectKey)) {
+            OSS ossClient = new OSSClientBuilder().build(endpoint, accessKeyId, accessKeySecret);
+            try {
+                if (ossClient.doesObjectExist(bucketName, objectKey)) {
+                    Date expiration = new Date(System.currentTimeMillis() + SIGNED_URL_EXPIRE_MILLIS);
+                    URL signedUrl = ossClient.generatePresignedUrl(bucketName, objectKey, expiration);
+                    return signedUrl.toString();
+                }
+            } finally {
+                ossClient.shutdown();
+            }
+        }
+
+        if (isLocalUploadPath(path)) {
+            String normalizedPath = path.startsWith("/") ? path : "/" + path;
+            return ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path(normalizedPath)
+                    .toUriString();
+        }
+
+        return encodePublicUrl(path);
+    }
+
     private String buildPublicUrl(String objectKey) {
-        return "https://" + bucketName + "." + endpoint + "/" + objectKey;
+        return "https://" + bucketName + "." + endpoint + "/" + encodeObjectKey(objectKey);
     }
 
     private String extractObjectKey(String path) {
@@ -87,14 +123,20 @@ public class OssStorageService {
         String normalizedPrefix = normalizePrefix(dirPrefix);
         if (path.startsWith("http://") || path.startsWith("https://")) {
             URI uri = URI.create(path);
-            String uriPath = uri.getPath();
+            String uriPath = uri.getRawPath();
             if (!StringUtils.hasText(uriPath) || "/".equals(uriPath)) {
                 return null;
             }
             String objectKey = uriPath.startsWith("/") ? uriPath.substring(1) : uriPath;
+            objectKey = URLDecoder.decode(objectKey, StandardCharsets.UTF_8);
             return objectKey.startsWith(normalizedPrefix) ? objectKey : null;
         }
         return path.startsWith(normalizedPrefix) ? path : null;
+    }
+
+    private boolean isLocalUploadPath(String path) {
+        return StringUtils.hasText(path)
+                && (path.startsWith("uploads/") || path.startsWith("/uploads/"));
     }
 
     private String normalizePrefix(String prefix) {
@@ -107,5 +149,41 @@ public class OssStorageService {
     private String encodeFileName(String fileName) {
         return java.net.URLEncoder.encode(fileName, StandardCharsets.UTF_8)
                 .replace("+", "%20");
+    }
+
+    private String encodeObjectKey(String objectKey) {
+        String[] segments = objectKey.split("/");
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < segments.length; i++) {
+            if (i > 0) {
+                builder.append('/');
+            }
+            builder.append(encodeFileName(segments[i]));
+        }
+        return builder.toString();
+    }
+
+    private String encodePublicUrl(String path) {
+        if (!StringUtils.hasText(path)) {
+            return path;
+        }
+        try {
+            URL url = new URL(path);
+            String decodedPath = URLDecoder.decode(url.getPath(), StandardCharsets.UTF_8);
+            String normalizedPath = decodedPath.startsWith("/") ? decodedPath.substring(1) : decodedPath;
+            String encodedPath = encodeObjectKey(normalizedPath);
+            StringBuilder builder = new StringBuilder()
+                    .append(url.getProtocol())
+                    .append("://")
+                    .append(url.getAuthority())
+                    .append("/")
+                    .append(encodedPath);
+            if (StringUtils.hasText(url.getQuery())) {
+                builder.append("?").append(url.getQuery());
+            }
+            return builder.toString();
+        } catch (MalformedURLException e) {
+            return path;
+        }
     }
 }

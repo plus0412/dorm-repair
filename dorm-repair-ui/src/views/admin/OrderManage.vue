@@ -28,7 +28,11 @@
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="提交时间" width="160" />
+        <el-table-column prop="createTime" label="提交时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="viewDetail(row.id)">查看</el-button>
@@ -50,7 +54,6 @@
       />
     </el-card>
 
-    <!-- 驳回对话框 -->
     <el-dialog v-model="rejectDialogVisible" title="驳回工单" width="400px">
       <el-form :model="rejectForm">
         <el-form-item label="驳回原因" required>
@@ -63,10 +66,9 @@
       </template>
     </el-dialog>
 
-    <!-- 派单对话框 -->
     <el-dialog v-model="assignDialogVisible" title="分配维修人员" width="400px">
       <el-form :model="assignForm">
-        <el-form-item label="选择维修人员" required>
+        <el-form-item label="维修人员" required>
           <el-select v-model="assignForm.repairUserId" placeholder="请选择" style="width: 100%">
             <el-option v-for="u in repairUsers" :key="u.id" :label="u.realName" :value="u.id" />
           </el-select>
@@ -85,6 +87,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { orderApi, userApi } from '../../api'
+import { formatDateTime } from '../../utils/format'
 
 const router = useRouter()
 
@@ -99,78 +102,110 @@ const assignDialogVisible = ref(false)
 const assignForm = ref({ id: null, repairUserId: null })
 
 const statusMap = {
-  0: { text: '待审核', type: 'info' }, 1: { text: '审核驳回', type: 'danger' },
-  2: { text: '待派单', type: 'warning' }, 3: { text: '待维修', type: 'warning' },
-  4: { text: '维修中', type: 'primary' }, 5: { text: '已完成', type: 'success' }, 6: { text: '已评价', type: 'success' }
+  0: { text: '待审核', type: 'info' },
+  1: { text: '审核驳回', type: 'danger' },
+  2: { text: '待派单', type: 'warning' },
+  3: { text: '待维修', type: 'warning' },
+  4: { text: '维修中', type: 'primary' },
+  5: { text: '已完成', type: 'success' },
+  6: { text: '已评价', type: 'success' }
 }
-const getStatusText = (s) => statusMap[s]?.text || '未知'
-const getStatusType = (s) => statusMap[s]?.type || 'info'
 
-onMounted(() => { loadData(); loadRepairUsers() })
+const getStatusText = status => statusMap[status]?.text || '未知'
+const getStatusType = status => statusMap[status]?.type || 'info'
+
+onMounted(() => {
+  loadData()
+  loadRepairUsers()
+})
 
 const loadData = async () => {
   try {
     const res = await orderApi.page(queryParams.value)
     tableData.value = res.data.records || []
     total.value = res.data.total || 0
-  } catch (error) { console.error(error) }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
 const loadRepairUsers = async () => {
   try {
     const res = await userApi.page({ pageNum: 1, pageSize: 100, role: 'repair' })
     repairUsers.value = res.data.records || []
-  } catch (error) { console.error(error) }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
-const viewDetail = (id) => { router.push(`/admin/order-detail/${id}`) }
+const viewDetail = id => {
+  router.push(`/admin/order-detail/${id}`)
+}
 
 const auditOrder = async (row, approved) => {
   try {
     await orderApi.audit(row.id, { approved, auditRemark: '' })
     ElMessage.success('审核成功')
     loadData()
-  } catch (error) { console.error(error) }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
-const showRejectDialog = (row) => {
+const showRejectDialog = row => {
   rejectForm.value = { id: row.id, remark: '' }
   rejectDialogVisible.value = true
 }
 
 const confirmReject = async () => {
-  if (!rejectForm.value.remark) { ElMessage.warning('请输入驳回原因'); return }
+  if (!rejectForm.value.remark) {
+    ElMessage.warning('请输入驳回原因')
+    return
+  }
   try {
-    await orderApi.audit(rejectForm.value.id, { approved: false, auditRemark: rejectForm.value.remark })
+    await orderApi.audit(rejectForm.value.id, {
+      approved: false,
+      auditRemark: rejectForm.value.remark
+    })
     ElMessage.success('已驳回')
     rejectDialogVisible.value = false
     loadData()
-  } catch (error) { console.error(error) }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
-const showAssignDialog = (row) => {
+const showAssignDialog = row => {
   assignForm.value = { id: row.id, repairUserId: null }
   assignDialogVisible.value = true
 }
 
 const confirmAssign = async () => {
-  if (!assignForm.value.repairUserId) { ElMessage.warning('请选择维修人员'); return }
+  if (!assignForm.value.repairUserId) {
+    ElMessage.warning('请选择维修人员')
+    return
+  }
   try {
     await orderApi.assign(assignForm.value.id, { repairUserId: assignForm.value.repairUserId })
     ElMessage.success('派单成功')
     assignDialogVisible.value = false
     loadData()
-  } catch (error) { console.error(error) }
+  } catch (error) {
+    console.error(error)
+  }
 }
 
-const deleteOrder = async (id) => {
+const deleteOrder = async id => {
   ElMessageBox.confirm('确定要删除该工单吗？', '提示', { type: 'warning' })
     .then(async () => {
       try {
         await orderApi.delete(id)
         ElMessage.success('删除成功')
         loadData()
-      } catch (error) { console.error(error) }
-    }).catch(() => {})
+      } catch (error) {
+        console.error(error)
+      }
+    })
+    .catch(() => {})
 }
 </script>

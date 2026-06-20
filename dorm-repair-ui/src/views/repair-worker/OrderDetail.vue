@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="order-detail">
     <h2>工单详情</h2>
     <el-card v-if="order">
@@ -16,10 +16,27 @@
         <el-descriptions-item label="报修描述" :span="2">{{ order.description }}</el-descriptions-item>
       </el-descriptions>
 
+      <el-divider v-if="images.length > 0">报修图片</el-divider>
+      <div v-if="images.length > 0" class="image-list">
+        <el-image
+          v-for="img in images"
+          :key="img.id"
+          :src="img.url"
+          :preview-src-list="images.map(item => item.url)"
+          fit="cover"
+          style="width: 120px; height: 120px; border-radius: 4px"
+        />
+      </div>
+
       <el-divider>操作记录</el-divider>
 
       <el-timeline>
-        <el-timeline-item v-for="record in records" :key="record.id" :timestamp="formatDateTime(record.createTime)" placement="top">
+        <el-timeline-item
+          v-for="record in records"
+          :key="record.id"
+          :timestamp="formatDateTime(record.createTime)"
+          placement="top"
+        >
           <p>{{ record.operation }} {{ record.remark ? `- ${record.remark}` : '' }}</p>
         </el-timeline-item>
       </el-timeline>
@@ -50,11 +67,12 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { orderApi, recordApi } from '../../api'
-import { formatDateTime } from '../../utils/format'
+import { formatDateTime, splitImageUrls } from '../../utils/format'
 
 const route = useRoute()
 const order = ref(null)
 const records = ref([])
+const images = ref([])
 const showFinishDialog = ref(false)
 const finishForm = ref({ remark: '' })
 
@@ -90,6 +108,7 @@ onMounted(async () => {
       recordApi.byOrder(route.params.id, { pageNum: 1, pageSize: 100 })
     ])
     order.value = orderRes.data
+    images.value = splitImageUrls(orderRes.data.images)
     records.value = recordRes.data.records || []
   } catch (error) {
     console.error(error)
@@ -122,5 +141,11 @@ const confirmFinish = async () => {
 .order-detail h2 {
   margin-bottom: 20px;
 }
-</style>
 
+.image-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+</style>

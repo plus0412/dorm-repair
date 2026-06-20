@@ -15,6 +15,7 @@
         <result property="description" column="description"/>
         <result property="status" column="status"/>
         <result property="repairUserId" column="repair_user_id"/>
+        <result property="assignTime" column="assign_time"/>
         <result property="startTime" column="start_time"/>
         <result property="finishTime" column="finish_time"/>
         <result property="images" column="image_urls"/>
@@ -70,7 +71,13 @@
                b.name AS building_name,
                r.room_no AS room_no,
                rt.type_name AS repair_type_name,
-               ru.real_name AS repair_user_name
+               ru.real_name AS repair_user_name,
+               (
+                   SELECT MIN(rr.create_time)
+                   FROM repair_record rr
+                   WHERE rr.order_id = ro.id
+                     AND rr.operation = '&#27966;&#21333;'
+               ) AS assign_time
         FROM repair_order ro
         LEFT JOIN sys_user u ON ro.student_id = u.id
         LEFT JOIN dorm_building b ON ro.building_id = b.id

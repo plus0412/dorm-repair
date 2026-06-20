@@ -32,7 +32,11 @@
       <template #header>最新公告</template>
       <el-table :data="notices" stripe>
         <el-table-column prop="title" label="标题" />
-        <el-table-column prop="createTime" label="发布时间" width="180" />
+        <el-table-column prop="createTime" label="发布时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.createTime) }}
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
   </div>
@@ -41,21 +45,20 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { orderApi, noticeApi } from '../../api'
+import { formatDateTime } from '../../utils/format'
 
 const stats = ref({ total: 0, pending: 0, repairing: 0, completed: 0 })
 const notices = ref([])
 
 onMounted(async () => {
   try {
-    // 获取我的报修统计
     const orderRes = await orderApi.my({ pageNum: 1, pageSize: 100 })
     const orders = orderRes.data.records || []
     stats.value.total = orderRes.data.total || 0
-    stats.value.pending = orders.filter(o => o.status === 0).length
-    stats.value.repairing = orders.filter(o => [3, 4].includes(o.status)).length
-    stats.value.completed = orders.filter(o => [5, 6].includes(o.status)).length
+    stats.value.pending = orders.filter(item => item.status === 0).length
+    stats.value.repairing = orders.filter(item => [3, 4].includes(item.status)).length
+    stats.value.completed = orders.filter(item => [5, 6].includes(item.status)).length
 
-    // 获取公告
     const noticeRes = await noticeApi.list({ pageNum: 1, pageSize: 5 })
     notices.value = noticeRes.data.records || []
   } catch (error) {
@@ -68,6 +71,7 @@ onMounted(async () => {
 .student-home h2 {
   margin-bottom: 20px;
 }
+
 .stat-number {
   font-size: 32px;
   font-weight: bold;

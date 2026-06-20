@@ -11,7 +11,11 @@
             <el-tag type="success">{{ row.status === 6 ? '已评价' : '已完成' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="finishTime" label="完成时间" width="160" />
+        <el-table-column prop="finishTime" label="完成时间" width="180">
+          <template #default="{ row }">
+            {{ formatDateTime(row.finishTime) }}
+          </template>
+        </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="viewDetail(row.id)">查看</el-button>
@@ -37,6 +41,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { orderApi } from '../../api'
+import { formatDateTime } from '../../utils/format'
 
 const router = useRouter()
 
